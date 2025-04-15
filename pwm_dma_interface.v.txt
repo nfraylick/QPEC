@@ -1,0 +1,35 @@
+module pwm_dma_interface (
+    input wire clk,
+    input wire rst,
+    input wire pwm_in,
+
+    output wire [15:0] m_axis_tdata,
+    output wire        m_axis_tvalid,
+    input  wire        m_axis_tready
+);
+
+    wire [15:0] pwm_val;
+    wire        valid;
+    reg         sent;
+
+    pwm_sampler u_sampler (
+        .clk(clk),
+        .rst(rst),
+        .pwm_in(pwm_in),
+        .pwm_val(pwm_val),
+        .valid(valid)
+    );
+
+    assign m_axis_tdata  = pwm_val;
+    assign m_axis_tvalid = valid & ~sent & m_axis_tready;
+
+    always @(posedge clk) begin
+        if (rst) begin
+            sent <= 0;
+        end else if (valid & m_axis_tready) begin
+            sent <= 1;
+        end else begin
+            sent <= 0;
+        end
+    end
+endmodule

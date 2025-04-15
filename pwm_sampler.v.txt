@@ -1,0 +1,45 @@
+module pwm_sampler (
+    input wire clk,             // System clock
+    input wire rst,             // Active-high reset
+    input wire pwm_in,          // PWM input signal
+    output reg [15:0] pwm_val,  // Output measured PWM value (high-time duration)
+    output reg valid            // High when a new measurement is ready
+);
+
+    reg [15:0] counter;
+    reg [15:0] high_time;
+    reg pwm_in_d1;
+    reg pwm_in_d2;
+    wire rising_edge;
+    wire falling_edge;
+
+    assign rising_edge  =  pwm_in_d1 & ~pwm_in_d2;
+    assign falling_edge = ~pwm_in_d1 &  pwm_in_d2;
+
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            counter     <= 0;
+            high_time   <= 0;
+            valid       <= 0;
+            pwm_val     <= 0;
+            pwm_in_d1   <= 0;
+            pwm_in_d2   <= 0;
+        end else begin
+            pwm_in_d1 <= pwm_in;
+            pwm_in_d2 <= pwm_in_d1;
+
+            if (rising_edge) begin
+                counter <= 0;
+                valid <= 0;
+            end else if (pwm_in_d1) begin
+                counter <= counter + 1;
+            end
+
+            if (falling_edge) begin
+                high_time <= counter;
+                pwm_val <= counter;
+                valid <= 1;
+            end
+        end
+    end
+endmodule
